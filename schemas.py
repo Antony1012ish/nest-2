@@ -1,20 +1,26 @@
 from pydantic import BaseModel
-from datetime import date
 
-class StudentCreate(BaseModel):
-    first_name: str
-    middle_name: str
-    last_name: str
-    age: int
-    city: str
+class ClassBase(BaseModel):
+    name: str
+    teacher: str
 
-class ClassCreate(BaseModel):
-    class_name: str
-    description: str
-    start_date: date
-    end_date: date
-    hours: int
+class ClassCreate(ClassBase):
+    pass
 
-class StudentClassRegister(BaseModel):
-    student_id: int
+class Class(ClassBase):
+    id: int
+    class Config:
+        orm_mode = True
+
+class StudentBase(BaseModel):
+    name: str
+    email: str
     class_id: int
+
+class StudentCreate(StudentBase):
+    pass
+
+class Student(StudentBase):
+    id: int
+    class Config:
+        orm_mode = True

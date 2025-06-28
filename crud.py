@@ -1,62 +1,70 @@
 from sqlalchemy.orm import Session
 import models, schemas
+from database import SessionLocal
 
-def create_student(db: Session, student: schemas.StudentCreate):
-    new_student = models.Student(**student.dict())
-    db.add(new_student)
-    db.commit()
-    db.refresh(new_student)
-    return new_student
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def update_student(db: Session, student_id: int, student: schemas.StudentCreate):
-    student_data = db.query(models.Student).filter(models.Student.id == student_id).first()
-    if not student_data:
-        return {"error": "Student not found"}
-    for key, value in student.dict().items():
-        setattr(student_data, key, value)
-    db.commit()
-    return student_data
+def create_class(c: schemas.ClassCreate):
+    with SessionLocal() as db:
+        db_class = models.Class(**c.dict())
+        db.add(db_class)
+        db.commit()
+        db.refresh(db_class)
+        return db_class
 
-def delete_student(db: Session, student_id: int):
-    student_data = db.query(models.Student).filter(models.Student.id == student_id).first()
-    if not student_data:
-        return {"error": "Student not found"}
-    db.delete(student_data)
-    db.commit()
-    return {"message": "Student deleted"}
+def update_class(class_id: int, c: schemas.ClassCreate):
+    with SessionLocal() as db:
+        cls = db.get(models.Class, class_id)
+        if not cls:
+            raise HTTPException(status_code=404, detail="Class not found")
+        cls.name, cls.teacher = c.name, c.teacher
+        db.commit()
+        db.refresh(cls)
+        return cls
 
-def create_class(db: Session, class_: schemas.ClassCreate):
-    new_class = models.Class(**class_.dict())
-    db.add(new_class)
-    db.commit()
-    db.refresh(new_class)
-    return new_class
+def delete_class(class_id: int):
+    with SessionLocal() as db:
+        cls = db.get(models.Class, class_id)
+        if not cls:
+            raise HTTPException(status_code=404, detail="Class not found")
+        db.delete(cls)
+        db.commit()
 
-def update_class(db: Session, class_id: int, class_: schemas.ClassCreate):
-    class_data = db.query(models.Class).filter(models.Class.id == class_id).first()
-    if not class_data:
-        return {"error": "Class not found"}
-    for key, value in class_.dict().items():
-        setattr(class_data, key, value)
-    db.commit()
-    return class_data
+def create_student(s: schemas.StudentCreate):
+    with SessionLocal() as db:
+        db_student = models.Student(**s.dict())
+        db.add(db_student)
+        db.commit()
+        db.refresh(db_student)
+        return db_student
 
-def delete_class(db: Session, class_id: int):
-    class_data = db.query(models.Class).filter(models.Class.id == class_id).first()
-    if not class_data:
-        return {"error": "Class not found"}
-    db.delete(class_data)
-    db.commit()
-    return {"message": "Class deleted"}
+def update_student(student_id: int, s: schemas.StudentCreate):
+    with SessionLocal() as db:
+        stu = db.get(models.Student, student_id)
+        if not stu:
+            raise HTTPException(status_code=404, detail="Student not found")
+        stu.name, stu.email, stu.class_id = s.name, s.email, s.class_id
+        db.commit()
+        db.refresh(stu)
+        return stu
 
-def register_student_to_class(db: Session, student_id: int, class_id: int):
-    registration = models.Registration(student_id=student_id, class_id=class_id)
-    db.add(registration)
-    db.commit()
-    db.refresh(registration)
-    return {"message": "Student registered successfully"}
+def delete_student(student_id: int):
+    with SessionLocal() as db:
+        stu = db.get(models.Student, student_id)
+        if not stu:
+            raise HTTPException(status_code=404, detail="Student not found")
+        db.delete(stu)
+        db.commit()
 
-def get_students_in_class(db: Session, class_id: int):
-    registrations = db.query(models.Registration).filter(models.Registration.class_id == class_id).all()
-    student_list = [db.query(models.Student).filter(models.Student.id == reg.student_id).first() for reg in registrations]
-    return student_list
+def get_students():
+    with SessionLocal() as db:
+        return db.query(models.Student).all()
+
+def get_students_by_class(class_id: int):
+    with SessionLocal() as db:
+        return db.query(models.Student).filter(models.Student.class_id == class_id).all()
